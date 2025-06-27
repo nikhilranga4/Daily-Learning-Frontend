@@ -10,9 +10,10 @@ import ExamInterface from '../components/exam/ExamInterface';
 import { ExamResults } from '../components/exam/ExamResults';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { ChatButton } from '../components/chat/ChatButton';
+import { LLMChat } from '../components/llm/LLMChat';
 import { DailyTopic } from '../types';
 
-type ViewType = 'calendar' | 'exam' | 'results' | 'assessment-results' | 'knowledge' | 'knowledge-content' | 'admin';
+type ViewType = 'calendar' | 'exam' | 'results' | 'assessment-results' | 'knowledge' | 'knowledge-content' | 'admin' | 'llm-chat';
 
 interface KnowledgeTopic {
   _id: string;
@@ -120,12 +121,26 @@ export const Dashboard: React.FC = () => {
         ) : (
           <div>Error: No knowledge topic selected</div>
         );
+      case 'llm-chat':
+        return user ? (
+          <LLMChat
+            currentUser={{
+              _id: user._id,
+              name: user.name || 'User',
+              email: user.email,
+            }}
+            onBack={handleBackToDashboard}
+          />
+        ) : (
+          <div>Error: User not found</div>
+        );
       default:
         return (
           <CalendarView
             onAssessmentSelect={handleAssessmentSelect}
             onCompletedAssessmentClick={handleCompletedAssessmentClick}
             onKnowledgeClick={() => setCurrentView('knowledge')}
+            onLLMChatClick={() => setCurrentView('llm-chat')}
           />
         );
     }

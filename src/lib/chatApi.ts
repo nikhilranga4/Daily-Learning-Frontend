@@ -34,6 +34,8 @@ export interface ChatMessage {
   };
   createdAt: string;
   updatedAt: string;
+  isDeleted?: boolean;
+  isDeleting?: boolean;
 }
 
 export interface Conversation {

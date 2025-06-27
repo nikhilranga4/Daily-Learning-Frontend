@@ -10,7 +10,8 @@ import {
   Trophy,
   Target,
   Brain,
-  BookOpen
+  BookOpen,
+  Bot
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -24,12 +25,14 @@ interface CalendarViewProps {
   onAssessmentSelect: (dailyTopic: DailyTopic) => void;
   onCompletedAssessmentClick: (dailyTopic: DailyTopic) => void;
   onKnowledgeClick: () => void;
+  onLLMChatClick?: () => void;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   onAssessmentSelect,
   onCompletedAssessmentClick,
-  onKnowledgeClick
+  onKnowledgeClick,
+  onLLMChatClick
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dailyTopics, setDailyTopics] = useState<DailyTopic[]>([]);
@@ -229,23 +232,44 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           Track your daily learning progress and take assessments
         </p>
 
-        {/* Daily Knowledge Button */}
+        {/* Action Buttons */}
         <motion.div
+          className="text-center space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Button
-            onClick={onKnowledgeClick}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <Brain className="w-6 h-6 mr-3" />
-            <span>Daily Knowledge</span>
-            <BookOpen className="w-5 h-5 ml-3" />
-          </Button>
-          <p className="text-sm text-gray-500 mt-2">
-            Expand your programming knowledge with today's curated content
-          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              onClick={onKnowledgeClick}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <Brain className="w-6 h-6 mr-3" />
+              <span>Daily Knowledge</span>
+              <BookOpen className="w-5 h-5 ml-3" />
+            </Button>
+
+            {onLLMChatClick && (
+              <Button
+                onClick={onLLMChatClick}
+                className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Bot className="w-6 h-6 mr-3" />
+                <span>AI Assistant</span>
+                <Bot className="w-5 h-5 ml-3" />
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 justify-center text-sm text-gray-500">
+            <p>Expand your programming knowledge with today's curated content</p>
+            {onLLMChatClick && (
+              <>
+                <span className="hidden sm:inline">•</span>
+                <p>Chat with AI for coding help and explanations</p>
+              </>
+            )}
+          </div>
         </motion.div>
       </div>
 

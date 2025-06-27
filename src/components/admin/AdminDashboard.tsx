@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Users, Code, Calendar, Brain, MessageCircle } from 'lucide-react';
+import { Settings, Users, Code, Calendar, Brain, MessageCircle, Bot } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { LanguageManagement } from './LanguageManagement';
 import { TopicManagement } from './TopicManagement';
 import { KnowledgeManagement } from './KnowledgeManagement';
 import { AdminChatDashboard } from './AdminChatDashboard';
+import { LLMManagement } from './LLMManagement';
 import { useAuthStore } from '../../store/useAuthStore';
 
-type AdminTab = 'users' | 'languages' | 'topics' | 'knowledge' | 'chat';
+type AdminTab = 'users' | 'languages' | 'topics' | 'knowledge' | 'chat' | 'llm';
 
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -35,6 +36,17 @@ export const AdminDashboard: React.FC = () => {
               profilePicture: user.profilePicture
             }}
             onBack={() => setActiveTab('users')}
+          />
+        ) : null;
+      case 'llm':
+        return user ? (
+          <LLMManagement
+            currentUser={{
+              _id: user._id,
+              name: user.name || 'Admin',
+              email: user.email,
+              isAdmin: true,
+            }}
           />
         ) : null;
       default:
@@ -91,6 +103,12 @@ export const AdminDashboard: React.FC = () => {
             label="Chat Management"
             isActive={activeTab === 'chat'}
             onClick={() => setActiveTab('chat')}
+          />
+          <TabButton
+            icon={<Bot className="w-5 h-5 mr-2" />}
+            label="LLM Models"
+            isActive={activeTab === 'llm'}
+            onClick={() => setActiveTab('llm')}
           />
         </nav>
       </div>

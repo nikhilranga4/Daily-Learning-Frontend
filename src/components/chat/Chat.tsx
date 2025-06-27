@@ -6,7 +6,7 @@ import {
   Send,
   Paperclip,
   Image,
-  File,
+  File as FileIcon,
   Download,
   Reply,
   ArrowLeft,
@@ -16,7 +16,8 @@ import {
   CheckCheck,
   X,
   Edit3,
-  Trash2
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -75,18 +76,39 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isOwn,
   onReply,
-  formatFileSize,
-  getFileIcon,
-  onImageClick,
   onEdit,
   onDelete,
+  getFileIcon,
+  onImageClick,
   showDateSeparator,
-  dateLabel
+  dateLabel,
 }) => {
+  // All hooks must be called unconditionally
+  const [isHovered, setIsHovered] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [fileLoading, setFileLoading] = useState(true);
-  const [showActions, setShowActions] = useState(false);
+
+  if (message.isDeleting) {
+    return (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} my-2`}>
+        <div className="flex items-center space-x-2 bg-gray-100 text-gray-500 text-xs px-3 py-2 rounded-lg">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Deleting...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (message.isDeleted) {
+    return (
+      <div className="flex justify-center my-2">
+        <div className="bg-gray-100 text-gray-700 italic text-xs px-3 py-1 rounded-full">
+          This message was deleted
+        </div>
+      </div>
+    );
+  }
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString([], {
@@ -95,8 +117,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       hour12: true
     });
   };
-
-
 
   // Simulate file loading completion for non-image files
   useEffect(() => {
@@ -110,23 +130,51 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   }, [message.messageType]);
 
   return (
-    <>
+    <div 
+      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group relative py-4`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Date Separator */}
       {showDateSeparator && (
-        <div className="flex justify-center my-6">
-          <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
-            {dateLabel}
-          </div>
+        <div className="w-full text-center text-xs text-gray-500 mb-2">
+          {dateLabel}
         </div>
       )}
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group relative`}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
+      
+      {/* Action buttons - always render but control visibility */}
+      <div 
+        className={`absolute top-0 z-10 flex items-center space-x-1 p-1 bg-white border rounded-full shadow-sm transition-opacity ${
+          isHovered || message.isDeleting ? 'opacity-100' : 'opacity-0'
+        } ${isOwn ? 'right-0' : 'left-0'}`}
       >
+        <button
+          onClick={() => onReply(message)}
+          className="p-1.5 text-black hover:bg-gray-200 rounded-full"
+          title="Reply"
+        >
+          <Reply className="w-4 h-4" />
+        </button>
+        {isOwn && (
+          <>
+            <button
+              onClick={() => onEdit(message)}
+              className="p-1.5 text-black hover:bg-gray-200 rounded-full"
+              title="Edit"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(message._id)}
+              className="p-1.5 text-black hover:bg-gray-200 rounded-full"
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+
       <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
         {/* Reply indicator */}
         {message.replyTo && (
@@ -136,8 +184,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <p className="truncate">
                 {message.replyTo.messageType === 'file'
                   ? `📎 ${message.replyTo.fileName}`
-                  : message.replyTo.message
-                }
+                  : message.replyTo.message}
               </p>
             </div>
           </div>
@@ -155,10 +202,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="mb-2">
               {message.messageType === 'image' ? (
                 <div className="relative">
-                  {/* Show skeleton while loading */}
                   {imageLoading && <ImageSkeleton />}
-
-                  {/* Show error state */}
                   {imageError && (
                     <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
                       <div className="text-center text-gray-500">
@@ -176,16 +220,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       </div>
                     </div>
                   )}
-
-                  {/* Actual image */}
                   {!imageError && (
                     <img
-                      src={message.googleDriveFileId
-                        ? `https://drive.google.com/uc?id=${message.googleDriveFileId}`
-                        : (message.fileUrl?.includes('&export=download')
-                            ? message.fileUrl.replace('&export=download', '')
-                            : message.fileUrl)
-                      }
+                      id={`msg-img-${message._id}`}
+                      src={message.fileUrl}
                       alt={message.fileName}
                       className={`max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
                         imageLoading ? 'opacity-0 absolute' : 'opacity-100'
@@ -196,37 +234,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         setImageError(false);
                       }}
                       onClick={() => {
-                        if (!imageLoading) {
-                          const imageUrl = message.googleDriveFileId
-                            ? `https://drive.google.com/uc?id=${message.googleDriveFileId}`
-                            : (message.fileUrl?.includes('&export=download')
-                                ? message.fileUrl.replace('&export=download', '')
-                                : message.fileUrl);
-
+                        if (!imageLoading && message.fileUrl) {
                           onImageClick({
-                            url: imageUrl || '',
-                            fileName: message.fileName || 'Image',
-                            fileId: message.googleDriveFileId
+                            url: message.fileUrl,
+                            fileName: message.fileName || 'Image'
                           });
                         }
                       }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        const currentSrc = target.src;
-
-                        if (message.googleDriveFileId && !currentSrc.includes('thumbnail')) {
-                          target.src = `https://drive.google.com/thumbnail?id=${message.googleDriveFileId}&sz=w400`;
-                        } else if (message.fileUrl && !currentSrc.includes('localhost')) {
-                          target.src = `/api/chat/image/${message.googleDriveFileId}`;
-                        } else {
-                          setImageLoading(false);
-                          setImageError(true);
-                        }
+                      onError={() => {
+                        console.error('Image failed to load. URL:', message.fileUrl);
+                        setImageError(true);
+                        setImageLoading(false);
                       }}
                     />
                   )}
-
-                  {/* Download button - only show when image is loaded */}
                   {!imageLoading && !imageError && (
                     <a
                       href={message.fileUrl}
@@ -240,10 +261,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
               ) : (
                 <div className="relative">
-                  {/* Show skeleton while loading */}
                   {fileLoading && <FileSkeleton />}
-
-                  {/* Actual file attachment */}
                   <div
                     className={`flex items-center space-x-2 p-2 rounded transition-opacity ${
                       isOwn ? 'bg-blue-700' : 'bg-gray-50'
@@ -280,7 +298,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </p>
           )}
 
-          {/* Text message with file attachment (but not for images or files without additional text) */}
+          {/* Text message with file attachment */}
           {message.message &&
            message.messageType !== 'text' &&
            message.fileUrl &&
@@ -292,69 +310,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
 
           {/* Message footer */}
-          <div className={`flex items-center justify-between mt-2 text-xs ${
-            isOwn ? 'text-blue-200' : 'text-gray-500'
-          }`}>
-            <span>{formatTime(message.createdAt)}</span>
+          <div
+            className={`flex items-center justify-end mt-2 text-xs ${
+              isOwn ? 'text-blue-200' : 'text-gray-500'
+            }`}
+          >
             <div className="flex items-center space-x-1">
+              <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+                {formatTime(message.createdAt)}
+              </span>
               {isOwn && (
                 <>
                   {message.isRead ? (
-                    <CheckCheck className="w-3 h-3" />
+                    <CheckCheck className="w-4 h-4 ml-1" />
                   ) : (
-                    <Check className="w-3 h-3" />
+                    <Check className="w-4 h-4 ml-1" />
                   )}
                 </>
               )}
-              {/* Time */}
-              <span className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'} mr-2`}>
-                {formatTime(message.createdAt)}
-              </span>
-
-              {/* Action Buttons */}
-              <div className={`flex space-x-1 ${showActions ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onReply(message)}
-                  className={`p-1 h-auto ${
-                    isOwn
-                      ? 'text-blue-200 hover:text-white hover:bg-blue-700'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Reply className="w-3 h-3" />
-                </Button>
-
-                {isOwn && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(message)}
-                      className="p-1 h-auto text-blue-200 hover:text-white hover:bg-blue-700"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(message._id)}
-                      className="p-1 h-auto text-blue-200 hover:text-white hover:bg-red-600"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
-    </>
+    </div>
   );
+};
+
+// Utility function to format file sizes
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 // User List Modal Component
@@ -415,6 +405,41 @@ const UserListModal: React.FC<UserListModalProps> = ({ users, onSelectUser, onCl
   );
 };
 
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  children: React.ReactNode;
+}
+
+// Confirmation Modal Component
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+        <p className="text-sm text-gray-600 mb-6">{children}</p>
+        <div className="flex justify-end space-x-3">
+          <Button onClick={onClose} variant="outline">
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} variant="danger">
+            Delete
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationData | null>(null);
@@ -438,9 +463,14 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
     fileName: string;
     fileId?: string;
   } | null>(null);
-  const [modalImageLoading, setModalImageLoading] = useState(false);
-
-
+  const [modalImageLoading, setModalImageLoading] = useState(true);
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+  }>({
+    isOpen: false,
+    messageId: null,
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -488,8 +518,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
       const response = await chatApi.getConversation(otherUserId);
       setSelectedConversation(response.data.data);
       const messages = response.data.data.messages || [];
-
-
 
       setMessages(messages);
       setSelectedUserId(otherUserId);
@@ -557,17 +585,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return <Image className="w-4 h-4" />;
-    return <File className="w-4 h-4" />;
+    return <FileIcon className="w-4 h-4" />;
   };
 
   const handleEditMessage = (message: ChatMessage) => {
@@ -576,15 +596,34 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
     toast.success('Edit functionality coming soon!');
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = async () => {
+    const messageId = deleteConfirmState.messageId;
+    if (!messageId) return;
+
     try {
-      // TODO: Implement delete API call
-      console.log('Delete message:', messageId);
-      toast.success('Delete functionality coming soon!');
+      setDeleteConfirmState({ isOpen: false, messageId: null });
+      
+      // Remove message immediately (optimistic update)
+      setMessages(prev => prev.filter(msg => msg._id !== messageId));
+      
+      await chatApi.deleteMessage(messageId);
+      toast.success('Message deleted');
     } catch (error) {
       console.error('Error deleting message:', error);
       toast.error('Failed to delete message');
+      
+      // Re-add message if deletion failed
+      setMessages(prev => {
+        const deletedMessage = messages.find(msg => msg._id === messageId);
+        return deletedMessage 
+          ? [...prev, { ...deletedMessage, isDeleting: false }]
+          : prev;
+      });
     }
+  };
+
+  const openDeleteConfirmation = (messageId: string) => {
+    setDeleteConfirmState({ isOpen: true, messageId });
   };
 
   // Helper function to determine if date separator should be shown
@@ -719,7 +758,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {conversation.participant.name}
+                          {conversation.participant.name || conversation.participant.email.split('@')[0]}
                         </p>
                         {conversation.unreadCount > 0 && (
                           <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1">
@@ -727,6 +766,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
                           </span>
                         )}
                       </div>
+                      <p className="text-xs text-gray-600 truncate">
+                        {conversation.participant.email}
+                      </p>
                       <p className="text-xs text-gray-500 truncate">
                         {conversation.lastMessage.messageType === 'file'
                           ? `📎 ${conversation.lastMessage.fileName}`
@@ -734,7 +776,13 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
                         }
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(conversation.lastMessage.createdAt).toLocaleDateString()}
+                        {new Date(conversation.lastMessage.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </p>
                     </div>
                   </div>
@@ -782,7 +830,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
                       getFileIcon={getFileIcon}
                       onImageClick={setSelectedImage}
                       onEdit={handleEditMessage}
-                      onDelete={handleDeleteMessage}
+                      onDelete={openDeleteConfirmation}
                       showDateSeparator={shouldShowDateSeparator(message, messages[index - 1])}
                       dateLabel={getDateLabel(message.createdAt)}
                     />
@@ -907,6 +955,16 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
         />
       )}
 
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmState.isOpen}
+        onClose={() => setDeleteConfirmState({ isOpen: false, messageId: null })}
+        onConfirm={handleDeleteMessage}
+        title="Delete Message?"
+      >
+        Are you sure you want to permanently delete this message? This action cannot be undone.
+      </ConfirmationModal>
+
       {/* Image Modal */}
       {selectedImage && (
         <div
@@ -949,16 +1007,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onBack }) => {
                   }}
                   onLoad={() => setModalImageLoading(false)}
                   onLoadStart={() => setModalImageLoading(true)}
-                  onError={(e) => {
-                    // Fallback URLs for modal
-                    const target = e.target as HTMLImageElement;
-                    const currentSrc = target.src;
-
-                    if (selectedImage.fileId && !currentSrc.includes('thumbnail')) {
-                      target.src = `https://drive.google.com/thumbnail?id=${selectedImage.fileId}&sz=w1200`;
-                    } else if (selectedImage.fileId && !currentSrc.includes('localhost')) {
-                      target.src = `/api/chat/image/${selectedImage.fileId}`;
-                    }
+                  onError={() => {
                     setModalImageLoading(false);
                   }}
                 />

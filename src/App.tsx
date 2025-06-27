@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Account } from './pages/Account';
 import { PendingApprovalPage } from './pages/PendingApprovalPage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { LLMChat } from './components/llm/LLMChat';
 
 function App() {
   const { user, token, setLoading, isLoading } = useAuthStore();
@@ -73,6 +74,16 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/llm-chat" element={
+          <LLMChat
+            currentUser={{
+              _id: user._id,
+              name: user.name || 'User',
+              email: user.email,
+            }}
+            onBack={() => window.history.back()}
+          />
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="top-right" />

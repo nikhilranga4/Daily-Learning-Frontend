@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, User, Settings, BookOpen } from 'lucide-react';
+import { LogOut, User, Settings, BookOpen, Bot } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../ui/Button';
@@ -28,6 +28,26 @@ export const Navbar: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
+            {/* LLM Chat Button */}
+            <Button
+              variant={location.pathname === '/llm-chat' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => {
+                console.log('Navigating to LLM chat...');
+                navigate('/llm-chat');
+              }}
+              className={`flex items-center space-x-2 transition-all duration-200 ${
+                location.pathname === '/llm-chat'
+                  ? 'shadow-md ring-2 ring-purple-200'
+                  : 'hover:shadow-sm'
+              }`}
+              title="AI Assistant Chat"
+            >
+              <Bot className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">AI Chat</span>
+              <span className="text-sm font-medium sm:hidden">AI</span>
+            </Button>
+
             {/* Account Button */}
             <Button
               variant={location.pathname === '/account' ? 'primary' : 'outline'}

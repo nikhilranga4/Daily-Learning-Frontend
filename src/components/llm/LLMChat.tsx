@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Send,
   Plus,
-  MessageCircle,
   Bot,
-  User,
-  Trash2,
-  Edit3,
   ArrowLeft,
   Settings,
   Loader,
@@ -205,52 +201,13 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
     }
   };
 
-  const deleteConversation = async (conversationId: string) => {
-    if (!confirm('Are you sure you want to delete this conversation?')) {
-      return;
-    }
 
-    try {
-      await llmApi.deleteConversation(conversationId);
-      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
-      
-      if (currentConversation?._id === conversationId) {
-        setCurrentConversation(null);
-      }
-      
-      toast.success('Conversation deleted');
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
-    }
-  };
-
-  const updateConversationTitle = async (conversationId: string, newTitle: string) => {
-    try {
-      await llmApi.updateConversationTitle(conversationId, newTitle);
-      
-      setConversations(prev => 
-        prev.map(conv => 
-          conv._id === conversationId ? { ...conv, title: newTitle } : conv
-        )
-      );
-      
-      if (currentConversation?._id === conversationId) {
-        setCurrentConversation(prev => prev ? { ...prev, title: newTitle } : null);
-      }
-      
-      toast.success('Title updated');
-    } catch (error) {
-      console.error('Error updating title:', error);
-      toast.error('Failed to update title');
-    }
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -287,7 +244,7 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
       if (availableModels.find(m => m._id === model._id)) {
         console.log(`⚠️  Validation failed but model exists in list, using anyway`);
         setSelectedModel(model);
-        toast.warning(`Using ${model.displayName} (validation warning)`);
+        toast.error(`Using ${model.displayName} (validation warning)`);
       } else {
         toast.error(`Failed to switch to ${model.displayName}: ${error.response?.data?.message || 'Model not available'}`);
         return;
@@ -313,8 +270,6 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onSelectConversation={loadConversation}
         onNewConversation={createNewConversation}
-        onDeleteConversation={deleteConversation}
-        onUpdateTitle={updateConversationTitle}
       />
 
       {/* Main Chat Area */}
@@ -338,8 +293,8 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
                   {(currentConversation?.llmModelId || selectedModel) && (
                     <p className="text-sm text-gray-600">
                       {currentConversation?.llmModelId
-                        ? `${currentConversation.llmModelId.displayName} • ${currentConversation.llmModelId.provider}`
-                        : `${selectedModel?.displayName} • ${selectedModel?.provider}`
+                        ? `${currentConversation.llmModelId.displayName} • ${currentConversation.llmModelId.provider} • Environment`
+                        : `${selectedModel?.displayName} • ${selectedModel?.provider} • Environment`
                       }
                     </p>
                   )}
@@ -371,7 +326,7 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
                   Welcome to AI Assistant
                 </h2>
                 <p className="text-gray-500 mb-6">
-                  Start a new conversation to begin chatting with AI
+                  Start a new conversation to begin chatting with AI models configured in your environment
                 </p>
                 <Button onClick={createNewConversation} className="flex items-center space-x-2">
                   <Plus className="w-4 h-4" />
@@ -454,7 +409,7 @@ export const LLMChat: React.FC<LLMChatProps> = ({ currentUser, onBack }) => {
                       setMessage(e.target.value);
                       adjustTextareaHeight();
                     }}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyDown}
                     placeholder={selectedModel ? `Ask ${selectedModel.displayName}...` : "Type your message..."}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                     rows={1}

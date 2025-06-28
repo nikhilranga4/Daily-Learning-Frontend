@@ -1,12 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   MessageCircle,
-  Trash2,
-  Edit3,
-  Check,
-  X,
   ChevronLeft,
   ChevronRight,
   Calendar,
@@ -21,8 +17,6 @@ interface LLMSidebarProps {
   onToggle: () => void;
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
-  onDeleteConversation: (conversationId: string) => void;
-  onUpdateTitle: (conversationId: string, newTitle: string) => void;
 }
 
 export const LLMSidebar: React.FC<LLMSidebarProps> = ({
@@ -32,29 +26,7 @@ export const LLMSidebar: React.FC<LLMSidebarProps> = ({
   onToggle,
   onSelectConversation,
   onNewConversation,
-  onDeleteConversation,
-  onUpdateTitle,
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-
-  const startEditing = (conversation: LLMConversation) => {
-    setEditingId(conversation._id);
-    setEditTitle(conversation.title);
-  };
-
-  const saveTitle = () => {
-    if (editingId && editTitle.trim()) {
-      onUpdateTitle(editingId, editTitle.trim());
-    }
-    setEditingId(null);
-    setEditTitle('');
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditTitle('');
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -162,9 +134,9 @@ export const LLMSidebar: React.FC<LLMSidebarProps> = ({
                         </div>
                         
                         <div className="space-y-1">
-                          {groupConversations.map(conversation => (
+                          {groupConversations.map((conversation, index) => (
                             <motion.div
-                              key={conversation._id}
+                              key={`${groupName}-${conversation._id}-${index}`}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               className={`group relative rounded-lg transition-colors ${
@@ -177,93 +149,23 @@ export const LLMSidebar: React.FC<LLMSidebarProps> = ({
                                 className="p-3 cursor-pointer"
                                 onClick={() => onSelectConversation(conversation._id)}
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    {editingId === conversation._id ? (
-                                      <div className="flex items-center space-x-1">
-                                        <input
-                                          type="text"
-                                          value={editTitle}
-                                          onChange={(e) => setEditTitle(e.target.value)}
-                                          onKeyPress={(e) => {
-                                            if (e.key === 'Enter') saveTitle();
-                                            if (e.key === 'Escape') cancelEditing();
-                                          }}
-                                          className="flex-1 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                          autoFocus
-                                          onClick={(e) => e.stopPropagation()}
-                                        />
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            saveTitle();
-                                          }}
-                                          className="p-1 h-auto"
-                                        >
-                                          <Check className="w-3 h-3 text-green-600" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            cancelEditing();
-                                          }}
-                                          className="p-1 h-auto"
-                                        >
-                                          <X className="w-3 h-3 text-red-600" />
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <h3 className="text-sm font-medium text-gray-800 truncate">
-                                          {conversation.title}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-1">
-                                          <p className="text-xs text-gray-500">
-                                            {conversation.llmModelId.displayName}
-                                          </p>
-                                          <span className="text-xs text-gray-400">
-                                            {formatDate(conversation.lastMessageAt)}
-                                          </span>
-                                        </div>
-                                        {conversation.messages.length > 0 && (
-                                          <p className="text-xs text-gray-400 mt-1 truncate">
-                                            {conversation.messages[conversation.messages.length - 1].content.substring(0, 50)}
-                                            {conversation.messages[conversation.messages.length - 1].content.length > 50 ? '...' : ''}
-                                          </p>
-                                        )}
-                                      </>
-                                    )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-gray-800 truncate">
+                                    {conversation.title}
+                                  </h3>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <p className="text-xs text-gray-500">
+                                      {conversation.llmModelId.displayName}
+                                    </p>
+                                    <span className="text-xs text-gray-400">
+                                      {formatDate(conversation.lastMessageAt)}
+                                    </span>
                                   </div>
-
-                                  {editingId !== conversation._id && (
-                                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          startEditing(conversation);
-                                        }}
-                                        className="p-1 h-auto"
-                                      >
-                                        <Edit3 className="w-3 h-3 text-gray-500" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onDeleteConversation(conversation._id);
-                                        }}
-                                        className="p-1 h-auto"
-                                      >
-                                        <Trash2 className="w-3 h-3 text-red-500" />
-                                      </Button>
-                                    </div>
+                                  {conversation.messages.length > 0 && (
+                                    <p className="text-xs text-gray-400 mt-1 truncate">
+                                      {conversation.messages[conversation.messages.length - 1].content.substring(0, 50)}
+                                      {conversation.messages[conversation.messages.length - 1].content.length > 50 ? '...' : ''}
+                                    </p>
                                   )}
                                 </div>
                               </div>

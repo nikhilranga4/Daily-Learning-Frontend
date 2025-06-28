@@ -146,6 +146,9 @@ export const LLMModelDropdown: React.FC<LLMModelDropdownProps> = ({
                           Default
                         </span>
                       )}
+                      <span className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded">
+                        Environment
+                      </span>
                     </div>
                     {model.description && (
                       <p className="text-xs text-gray-400 mt-1 truncate">

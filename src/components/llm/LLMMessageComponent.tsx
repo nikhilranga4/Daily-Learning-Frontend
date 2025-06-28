@@ -206,18 +206,18 @@ export const LLMMessageComponent: React.FC<LLMMessageComponentProps> = ({
       )}
       
       <div className={`flex-1 max-w-3xl ${isUser ? 'flex justify-end' : ''}`}>
-        <Card className={`${isUser ? 'bg-blue-600 text-white' : 'bg-white'} shadow-sm`}>
+        <Card className={`${isUser ? 'bg-gray-100 border-gray-200' : 'bg-white'} shadow-sm`}>
           <CardContent className="p-4">
             {isUser ? (
               <div>
-                <p className="text-white leading-relaxed whitespace-pre-wrap">
+                <p className="text-black leading-relaxed whitespace-pre-wrap font-medium">
                   {message.content}
                 </p>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-500">
-                  <span className="text-xs text-blue-100">
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-300">
+                  <span className="text-xs text-gray-600 font-medium">
                     {currentUser.name}
                   </span>
-                  <span className="text-xs text-blue-100">
+                  <span className="text-xs text-gray-500">
                     {formatTimestamp(message.timestamp)}
                   </span>
                 </div>
